@@ -3,17 +3,14 @@
  *
  * Register the gutenberg custom templates
  */
-function register_gutenberg_custom_templates($post_id) {
-    if ( get_post_type($post_id) !== 'gcf-template' ) {
-        return false;
-    }
-
+function register_gutenberg_custom_templates($post_id, $post) {
     $templates = get_posts( array( 'post_type' => 'gcf-template') );
 
     foreach ( $templates as $template ) {
-        $post_type = get_post_type_object( get_post_meta( $template->ID, 'post_type', true ) );
+        $template_post_type = get_post_meta( $template->ID, 'post_type', true );
+        $post_type_object = get_post_type_object($template_post_type);
 
-        if ( $post_type ) {
+        if ( $post_type_object && ($template_post_type === $post->post_type or $post->post_type === 'gcf-template') ) {
             // Computing the template.
             $gutenberg_template = array();
             $fields_config = json_decode( get_post_meta( $template->ID, 'fields', true ) );
@@ -29,17 +26,17 @@ function register_gutenberg_custom_templates($post_id) {
                     'type' => 'string',
                 ) );
             }
-            $post_type->template = $gutenberg_template;
+            $post_type_object->template = $gutenberg_template;
 
             // Computing the lock config.
             $lock = get_post_meta($template->ID, 'lock', true);
             if ( $lock && $lock !== 'none' ) {
-                $post_type->template_lock = $lock;
+                $post_type_object->template_lock = $lock;
             }
         }
     }
 }
-add_action('save_post', 'register_gutenberg_custom_templates');
+add_action('save_post', 'register_gutenberg_custom_templates', 10, 2);
 
 /**
  *
